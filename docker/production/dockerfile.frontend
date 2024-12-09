@@ -1,0 +1,36 @@
+FROM node:20-alpine
+
+# Install OS dependencies including build tools and libraries needed to build your project
+RUN apk update && \
+    apk add --no-cache \
+    ttf-freefont \
+    chromium \
+    git \
+    build-base \      
+    python3 \        
+    py3-pip \        
+    automake \
+    autoconf \
+    libtool \
+    linux-headers \
+    libstdc++ \
+    libc6-compat \
+    net-tools \
+    iputils \
+    curl
+
+    
+WORKDIR /app/
+
+COPY ../.. .
+
+RUN rm -rf frontend/node_modules 
+RUN rm -rf frontend/.next
+
+RUN cd frontend && npm install --force
+RUN cd frontend && npm run build
+
+EXPOSE 8979
+WORKDIR /app/frontend
+
+CMD [ "npm","run","start","-p","8979" ]

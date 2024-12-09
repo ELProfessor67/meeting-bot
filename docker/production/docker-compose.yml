@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  backend-server:
+    container_name: meeting-bot-backend
+    build:
+      context: ../../
+      dockerfile: docker/production/dockerfile.backend 
+    ports:
+      - "8976:8976"
+
+  frontend-server:
+    container_name: meeting-bot-frontend
+    build:
+      context: ../../
+      dockerfile: docker/production/dockerfile.frontend 
+    ports:
+      - "8979:8979"
+    depends_on:
+      - backend-server
+      

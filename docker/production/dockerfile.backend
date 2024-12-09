@@ -1,0 +1,40 @@
+# Use the official Node.js 20 Alpine image
+FROM node:20-alpine
+
+# Set the working directory
+WORKDIR /app/
+
+# Install OS dependencies including build tools and libraries needed to build your project
+RUN apk update && \
+    apk add --no-cache \
+    ttf-freefont \
+    chromium \
+    git \
+    build-base \      
+    python3 \        
+    py3-pip \        
+    automake \
+    autoconf \
+    libtool \
+    linux-headers \
+    libstdc++ \
+    libc6-compat \
+    net-tools \
+    iputils \
+    curl
+
+# Copy the entire project to the working directory
+COPY ../.. .
+
+# Remove existing node_modules to avoid issues
+RUN rm -rf backend/node_modules
+
+# Install dependencies for backend and shared
+RUN cd backend && npm install --force
+
+# Expose necessary ports
+EXPOSE 8976
+
+WORKDIR /app/backend
+# Start the application
+CMD [ "npm", "run", "start" ]
