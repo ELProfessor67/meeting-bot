@@ -20,7 +20,7 @@ const HeyGenStreaming = () => {
 
     const mediaElement = useRef(null);
     const roomRef = useRef(null);
-    const mediaStream = useRef(new MediaStream());
+    const mediaStream = useRef();
     const webSocket = useRef(null);
     const sessTokenRef = useRef(null);
     const sessionDataRef = useRef(null);
