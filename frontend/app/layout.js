@@ -1,3 +1,4 @@
+import Script from "next/script";
 import "./globals.css";
 
 
@@ -11,6 +12,8 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         {children}
+        <Script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"/>
+        <Script src="/main.js"/>
       </body>
     </html>
   );

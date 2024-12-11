@@ -33,4 +33,4 @@ RUN cd frontend && npm run build
 EXPOSE 8979
 WORKDIR /app/frontend
 
-CMD [ "npm","run","start","-p","8979" ]
+CMD [ "npm","run","start","--","-p","8979" ]
