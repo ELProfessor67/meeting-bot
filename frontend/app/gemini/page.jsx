@@ -23,6 +23,7 @@ function App() {
   const videoRef = useRef(null)
   // either the screen capture, the video or null, if null we hide it
   const [videoStream, setVideoStream] = useState(null);
+  const [shareScreen, setShareScreen] = useState(true);
 
   return (
     <div className="App">

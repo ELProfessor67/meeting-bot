@@ -4,13 +4,16 @@ import fastifyFormBody from '@fastify/formbody';
 import fastifyWs from '@fastify/websocket';
 import fastifySocketIo from 'fastify-socket.io';
 import {TranscriptionService} from './services/TranscribtionService.js';
-import { SYSTEM_PROMTP, WELCOME_MESSAGE } from './constant/promptConstant.js';
+import { SYSTEM_PROMTP, TIME_LIMIT, WELCOME_MESSAGE } from './constant/promptConstant.js';
 import { textToSpeechService } from './services/realTimeSpeechService.js';
 import { promptLLM } from './services/promtLLMservice.js';
 import { PlayAiService } from './services/playAIService.js';
 import axios from 'axios';
 import fastifyCors from 'fastify-cors';
 import { promptLLMWithoutMedia } from './services/promtServiceWithMedia.js';
+import { geminiLLM } from './services/geminiLLMService.js';
+import { PlayAiServiceWithHeygen } from './services/playAIwithHeygenService.js';
+
 
 
 // Load environment variables from .env file
@@ -82,11 +85,15 @@ fastify.register(async (fastify) => {
         const  transcriptionService = new TranscriptionService();
         const TTSService = textToSpeechService(connection,config,WELCOME_MESSAGE);
         const userChat = [{role: "system",content: SYSTEM_PROMTP},{role: 'assistant',content: WELCOME_MESSAGE}];
-        
+        const startAt = Date.now();
+
         // Handle incoming messages from Twilio
         connection.on('message', async (message) => {
             try {
-           
+                if((Date.now()-startAt) >= (TIME_LIMIT*60*1000)){
+                    handleTimeLimitReached();
+                }
+
                 const data = JSON.parse(message);                
                 switch (data.event) {
                     case 'start':
@@ -103,6 +110,17 @@ fastify.register(async (fastify) => {
                 console.error('Error parsing message:', error, 'Message:', message);
             }
         });
+
+
+
+        const handleTimeLimitReached = () => {
+            const data = {
+                event: 'limit_reached',
+                message: "5 min limit reached!"
+            }
+            connection.send(JSON.stringify(data));
+            connection.close();
+        }
 
         transcriptionService.on('transcription', async (transcript_text) => {
             if(!transcript_text) return
@@ -147,9 +165,13 @@ fastify.register(async (fastify) => {
         }
 
         const playAiservice = new PlayAiService(connection);
+        const startAt = Date.now();
         // Handle incoming messages from Twilio
         connection.on('message', async (message) => {
             try {
+                if((Date.now()-startAt) >= (TIME_LIMIT*60*1000)){
+                    handleTimeLimitReached();
+                }
                 const data = JSON.parse(message);                
                 switch (data.event) {
                     case 'start':
@@ -166,6 +188,16 @@ fastify.register(async (fastify) => {
                 console.error('Error parsing message:', error, 'Message:', message);
             }
         });
+
+
+        const handleTimeLimitReached = () => {
+            const data = {
+                event: 'limit_reached',
+                message: "5 min limit reached!"
+            }
+            connection.send(JSON.stringify(data));
+            connection.close();
+        }
 
 
         // Handle connection close and log transcript
@@ -200,30 +232,69 @@ const sendTextToHeyGenServer = async (session_id,token,text) => {
 // HeyGen
 fastify.register(async (fastify) => {
     fastify.get('/heygen', { websocket: true }, (connection, req) => {
-
         const config = {
             user: {
                 name: undefined,
                 email: undefined
             },
             sessionToken: undefined,
-            sessionData: undefined
+            sessionData: undefined,
+            generativeAI: 'openai',
+            prompt: SYSTEM_PROMTP
         }
-
-        const  transcriptionService = new TranscriptionService();
-        const userChat = [{role: "system",content: SYSTEM_PROMTP},{role: 'assistant',content: WELCOME_MESSAGE}];
-
+        
+        let  transcriptionService;
+       
+        const userChat = [];
+        const startAt = Date.now();
         // Handle incoming messages from Twilio
         connection.on('message', async (message) => {
             try {
-                const data = JSON.parse(message);                
+                const data = JSON.parse(message); 
+                
+                if((Date.now()-startAt) >= (TIME_LIMIT*60*1000)){
+                    handleTimeLimitReached();
+                }
+
                 switch (data.event) {
                     case 'start':
+                        
                         config.user.name = data?.start?.user?.name;
                         config.user.email = data?.start?.user?.email;
                         config.sessionData = data.start.sessionData;
                         config.sessionToken = data.start.sessionToken;
-                        sendTextToHeyGenServer(config.sessionData.session_id,config.sessionToken,WELCOME_MESSAGE);
+                        config.prompt = data.start.prompt;
+                        if(data.start.generativeAI){
+                            config.generativeAI = data.start.generativeAI;
+                        }
+
+                        if(config.generativeAI == 'openai'){
+                            userChat.push({role: "user",content: config.prompt});
+                            userChat.push({role: 'assistant',content: WELCOME_MESSAGE});
+                            transcriptionService =  new TranscriptionService();
+                            sendTextToHeyGenServer(config.sessionData.session_id,config.sessionToken,WELCOME_MESSAGE);
+                        }
+                        if(config.generativeAI == 'gemini'){
+                            userChat.push({role: "user",parts: [
+                                        {
+                                            text: config.prompt
+                                        }
+                                ]
+                            });
+                            userChat.push({role: "model",parts: [
+                                        {
+                                            text: WELCOME_MESSAGE
+                                        }
+                                ]
+                            });
+                            transcriptionService =  new TranscriptionService();
+                            sendTextToHeyGenServer(config.sessionData.session_id,config.sessionToken,WELCOME_MESSAGE);
+                        }
+                        
+                        if(config.generativeAI == 'playai'){
+                            transcriptionService = new PlayAiServiceWithHeygen();
+                        }
+                        transcriptStart();
                         console.log('user conneted',config.user.name);
                         break;
                     case 'media':
@@ -235,15 +306,58 @@ fastify.register(async (fastify) => {
             }
         });
 
-        transcriptionService.on('transcription', async (transcript_text) => {
+        const handleTimeLimitReached = () => {
+            const data = {
+                event: 'limit_reached',
+                message: "5 min limit reached!"
+            }
+            connection.send(JSON.stringify(data));
+            connection.close();
+        }
+
+
+        const handleTranscript = async (transcript_text) => {
             if(!transcript_text) return
             console.log('User', transcript_text);
-            userChat.push({role: 'user',content: transcript_text});
-            const assistantResponse = await promptLLMWithoutMedia(userChat,config,transcript_text);
-            sendTextToHeyGenServer(config.sessionData.session_id,config.sessionToken,assistantResponse);
-            userChat.push({role: 'assistant',content: assistantResponse});
-            console.log('assistant: ',assistantResponse);
-        });
+            if(config.generativeAI == 'openai'){
+                userChat.push({role: 'user',content: transcript_text});
+                const assistantResponse = await promptLLMWithoutMedia(userChat,config,transcript_text);
+                sendTextToHeyGenServer(config.sessionData.session_id,config.sessionToken,assistantResponse);
+                userChat.push({role: 'assistant',content: assistantResponse});
+                console.log('openai: ',assistantResponse);
+            }
+            
+            if(config.generativeAI == 'gemini'){
+                
+                const assistantResponse = await geminiLLM(transcript_text,userChat);
+                sendTextToHeyGenServer(config.sessionData.session_id,config.sessionToken,assistantResponse);
+                userChat.push({role: "user",parts: [
+                            {
+                                text: transcript_text
+                            }
+                    ]
+                });
+                userChat.push({role: "model", parts: [
+                            {
+                                text: assistantResponse
+                            }
+                    ]
+                });
+            
+                console.log('gemini: ',assistantResponse);
+            }
+
+            if(config.generativeAI == 'playai'){
+                sendTextToHeyGenServer(config.sessionData.session_id,config.sessionToken,transcript_text);
+            }
+   
+        }
+
+        const transcriptStart = () => {
+            transcriptionService.removeListener('transcription',handleTranscript)
+            transcriptionService.on('transcription', handleTranscript);
+        }
+       
 
         // Handle connection close and log transcript
         connection.on('close', async () => {

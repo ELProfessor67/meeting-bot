@@ -1,11 +1,11 @@
 import { useLiveAPIContext } from '@/contexts/LiveAPIContext';
 import classNames from 'classnames'
-import React, { forwardRef, useEffect } from 'react'
+import React, { forwardRef, useEffect, useState } from 'react'
 import AudioPulse from '../audio-pulse/AudioPulse';
 
 const MeetingView = forwardRef(({videoRef,videoStream},ref) => {
     const { client, connected, connect, disconnect, volume } = useLiveAPIContext();
-
+    const [shareScreen, setShareScreen] = useState(true);
     
     useEffect(() => {
         connect();
@@ -25,11 +25,20 @@ const MeetingView = forwardRef(({videoRef,videoStream},ref) => {
             />
 
             {
-                connected && !videoStream &&
+                connected && !videoStream && !shareScreen &&
                 <div className="action-button no-action outlined">
                     <AudioPulse volume={volume} active={connected} hover={false} />
                 </div>
             }
+            
+                <iframe
+                    src="http://localhost:6080/vnc.html?view_only=1&autoconnect=1&resize=scale"
+                    allow="fullscreen"
+                    className='w-[60vw] h-[100vh]'
+                    hidden={!(shareScreen && connected)}
+                ></iframe>
+            
+            
 
             {
                 !connected && 

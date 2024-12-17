@@ -2,13 +2,16 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import * as LivekitClient from 'livekit-client'
 import { Mic, MicOff, MoreVertical, PhoneOff } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const HeyGenStreaming = () => {
 
     const API_CONFIG = {
         serverUrl: "https://api.heygen.com",
     };
+    const searchParams = useSearchParams();
+    const llm = searchParams.get('llm');
+    const prompt = searchParams.get('prompt');
 
     const [taskInput, setTaskInput] = useState("");
     const [status, setStatus] = useState([]);
@@ -71,7 +74,9 @@ const HeyGenStreaming = () => {
                     email: "email@gmail.com",
                 },
                 sessionToken: sessTokenRef.current,
-                sessionData: sessionDataRef.current
+                sessionData: sessionDataRef.current,
+                generativeAI: llm,
+                prompt: prompt
             }
         }
         transcribeWebsocketRef.current.send(JSON.stringify(data));
@@ -125,16 +130,15 @@ const HeyGenStreaming = () => {
         ws.onmessage = async (event) => {
             const data = JSON.parse(event.data);
             switch (data.event) {
-                case 'media':
-
-                    break;
-                case 'clear':
-
+                case 'limit_reached':
+                    alert("5 Limit Reached!");
+                    endCall();
                     break;
             }
         };
 
         ws.onclose = () => {
+            endCall();
             console.log('close');
         }
     }, [sessTokenRef, sessionDataRef]);
@@ -199,8 +203,9 @@ const HeyGenStreaming = () => {
                     },
                     body: JSON.stringify({
                         quality: "high",
+                       
                         avatar_name: "",
-                        voice: { voice_id: "", rate: 2 },
+                        voice: { voice_id: "", rate: 1.4 },
                         version: "v2",
                         video_encoding: "H264",
                     }),
@@ -364,7 +369,7 @@ const HeyGenStreaming = () => {
                     <video
                         hidden={!connected}
                         ref={mediaElement}
-                        className="w-full h-full border rounded-lg max-h-[45rem]"
+                        className="w-full border rounded-lg max-h-[30rem]"
                         autoPlay
                     ></video>
                 

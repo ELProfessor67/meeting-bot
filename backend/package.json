@@ -16,6 +16,7 @@
         "@deepgram/sdk": "^2.4.0",
         "@fastify/formbody": "^8.0.0",
         "@fastify/websocket": "^11.0.0",
+        "@google/generative-ai": "^0.21.0",
         "axios": "^1.7.9",
         "dotenv": "^16.4.5",
         "elevenlabs": "^0.3.0",

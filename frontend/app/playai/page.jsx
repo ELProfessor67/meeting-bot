@@ -71,6 +71,10 @@ const App = () => {
             case 'clear':
               soundBufferRef.current.clearQueChunks();
               break;
+            case 'limit_reached':
+              alert("5 Limit Reached!");
+              endCall();
+              break;
           }
         };
 

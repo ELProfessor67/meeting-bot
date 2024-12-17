@@ -42,7 +42,7 @@ export default function Page() {
           </div>
 
 
-          {/* PlayAI Section */}
+          {/* Heygen Section */}
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <h2 className="text-2xl font-semibold text-gray-900 mb-4">HeyGen</h2>
@@ -50,7 +50,7 @@ export default function Page() {
                 Engage in fun and interactive games with our AI game master.
               </p>
               <Link 
-                href="/heygen"
+                href="/configration?model=heygen"
                 className="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
                 Create Meeting with HeyGen
