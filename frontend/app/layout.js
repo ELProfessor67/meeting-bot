@@ -1,5 +1,6 @@
 import Script from "next/script";
 import "./globals.css";
+import { Suspense } from "react";
 
 
 export const metadata = {
@@ -21,7 +22,11 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
+        <Suspense>
+
+      
         {children}
+        </Suspense>
         <Script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"/>
         <Script src="/main.js"/>
       </body>

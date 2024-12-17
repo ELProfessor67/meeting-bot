@@ -36,6 +36,7 @@ export default function Home() {
   },[selectedModel,model,prompt])
 
   return (
+    
     <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24 space-y-8">
       <h1 className="text-3xl md:text-4xl font-bold mb-8">AI Model Showcase</h1>
       
